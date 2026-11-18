@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  output_version 成果版本 SQL（Batch-19 T-OUT-002 / Batch-20 T-OUT-008 修订支撑）。
+
+  设计口径：
+  - selectMaxVersionNo：修订时计算 version_no = max + 1（无版本返回 0），
+    谓词与 uk_output_version_no 前缀 (output_id) 对齐；
+  - 版本行写入后不可原地修改，本文件不提供任何 UPDATE / DELETE 语句。
+-->
+<mapper namespace="cn.edu.rpm.output.infrastructure.mapper.OutputVersionMapper">
+
+    <select id="selectMaxVersionNo" resultType="int">
+        SELECT COALESCE(MAX(version_no), 0)
+          FROM output_version
+         WHERE output_id = #{outputId}
+    </select>
+
+</mapper>

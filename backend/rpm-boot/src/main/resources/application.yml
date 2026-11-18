@@ -1,0 +1,99 @@
+# =============================================================================
+# 科研项目管理系统 — 基础配置（与环境无关项）
+# 敏感配置（数据库/Redis 凭据）全部通过环境变量注入，禁止写入代码库。
+# =============================================================================
+spring:
+  application:
+    name: research-project-management
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE_BYTES:209715200}
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:210MB}
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # Flyway：唯一建表/改表途径（ddl-auto 禁用；禁止应用启动时自动建表以外的 DDL 渠道）
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: ${FLYWAY_VALIDATE:true}
+    out-of-order: false
+
+mybatis-plus:
+  configuration:
+    # 下划线列名 → 驼峰属性映射（created_at → createdAt）
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      # Flowable 会将连接 search_path 切换至 flowable schema，
+      # 此处显式声明业务表 schema 为 public，防止 MyBatis-Plus 在错误 schema 中查表
+      schema: public
+
+# Flowable 7.x：ACT_* 表独立 schema，建表/改表只允许走 Flyway（V03 + V09）
+# 技术文档 06 §7.2 的意图在此落为 Flowable 实际属性前缀 flowable.*；
+# FlowableConfig 同时以 Java 配置显式设置，防止属性前缀差异导致隔离失效。
+flowable:
+  database-schema: flowable
+  database-schema-update: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  # 请求头 X-Trace-Id：接入层 TraceIdFilter（ObservabilityConfig，order=0）写入 MDC 并回传响应头
+
+# 授权与权限快照（技术文档 06 §1.1：TTL 默认 5 分钟，禁止永不过期；禁止在代码中写死）
+rpm:
+  # 审计 Outbox 补写任务（T-AUD-002；默认每 5s 轮询，失败退避由 SQL 按_attempts 计算）
+  audit:
+    outbox:
+      relay-interval-ms: ${AUDIT_OUTBOX_RELAY_INTERVAL_MS:5000}
+      relay-initial-delay-ms: ${AUDIT_OUTBOX_RELAY_INITIAL_DELAY_MS:10000}
+      batch-size: ${AUDIT_OUTBOX_BATCH_SIZE:100}
+      max-attempts: ${AUDIT_OUTBOX_MAX_ATTEMPTS:5}
+  # 物化视图定时刷新（报表读模型；默认每日 02:30 低峰刷新）
+  reporting:
+    mv-refresh-enabled: ${MV_REFRESH_ENABLED:true}
+    mv-refresh-cron: ${MV_REFRESH_CRON:0 30 2 * * *}
+  security:
+    permission-cache-ttl: ${PERMISSION_CACHE_TTL:5m}
+    # V10 JWT 认证（生产必须通过环境变量设置密钥，禁止使用默认值）
+    jwt:
+      secret: ${JWT_SECRET:}
+  # 申报模块（技术文档 04 §3.2 步骤 6）
+  application:
+    workflow:
+      # Flowable 已部署的申报审批流程定义 key；模板版本与 BPMN 定义的绑定属于部署期配置
+      process-definition-key: ${APP_WORKFLOW_PROCESS_KEY:applicationApproval}
+  # 文件模块（技术文档 03 §5 / 06 §6.1 / 08 §4.2）
+  file:
+    # 单文件大小上限：200MB（T-FILE-004；超出返回 RPM-FILE-002）
+    max-size-bytes: ${FILE_MAX_SIZE_BYTES:209715200}
+    # 下载签名有效期：≤300 秒（T-FILE-005；上限由 FileAccessService 二次校验）
+    signature-ttl: ${FILE_SIGNATURE_TTL:300s}
+    # 上传扩展名白名单（小写、不含点）
+    allowed-extensions: pdf,png,jpg,jpeg,doc,docx,xls,xlsx,ppt,pptx,zip,txt,csv
+  # 项目模块（技术文档 08 §6.1 里程碑延期审批）
+  project:
+    milestone-delay:
+      # 延期审批模板业务编码（workflow_template.template_code）
+      template-code: ${PROJECT_DELAY_TEMPLATE_CODE:MILESTONE_DELAY}
+      # Flowable 已部署的延期审批流程定义 key（部署期配置，禁止硬编码）
+      process-definition-key: ${PROJECT_DELAY_PROCESS_KEY:milestoneDelay}
+  # 成果查重（Batch-20；BR-21：只提示不自动合并；分值与阈值外置，禁止硬编码）
+  output:
+    duplicate:
+      doi-score: ${OUTPUT_DUP_DOI_SCORE:1.00}
+      patent-score: ${OUTPUT_DUP_PATENT_SCORE:1.00}
+      owner-score: ${OUTPUT_DUP_OWNER_SCORE:0.90}
+      title-score: ${OUTPUT_DUP_TITLE_SCORE:0.60}
+      confirm-threshold: ${OUTPUT_DUP_CONFIRM_THRESHOLD:0.90}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true

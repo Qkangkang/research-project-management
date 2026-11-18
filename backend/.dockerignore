@@ -1,0 +1,9 @@
+target/
+.idea/
+*.iml
+*.log
+*.pid
+hs_err_pid*
+replay_pid*
+Dockerfile
+.dockerignore

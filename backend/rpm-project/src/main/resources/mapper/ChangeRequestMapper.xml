@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  change_request 变更单 SQL（T-PRJ-007）。
+  审批回调幂等需要行级锁，显式列清单，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.project.infrastructure.mapper.ChangeRequestMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.project.infrastructure.entity.ChangeRequestEntity">
+        SELECT id,
+               project_id,
+               change_type,
+               status,
+               current_version_id,
+               effective_date,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM change_request
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

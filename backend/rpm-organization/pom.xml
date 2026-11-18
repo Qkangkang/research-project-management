@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-organization</artifactId>
+    <name>rpm-organization</name>
+    <description>组织、部门、岗位、人员归属（Batch-3：组织数据层）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus（含 mybatis 与 @Mapper 注解；运行期拦截器/数据源由 rpm-boot 装配） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

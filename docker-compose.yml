@@ -1,0 +1,70 @@
+# =============================================================================
+# 科研项目管理系统 — 本地基础设施（PostgreSQL 16 + Redis 7 + MinIO）
+# 用途：一条命令拉起后端所需的全部第三方依赖；应用本身仍从 IDE / Maven 本地运行。
+# 说明：凭据为本地开发默认值，与 backend 的 application-dev.yml 默认值对齐；
+#       生产环境凭据必须经环境变量注入（见 application-prod.yml）。
+# =============================================================================
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: rpm-postgres
+    environment:
+      POSTGRES_USER: rpm
+      POSTGRES_PASSWORD: rpm
+      POSTGRES_DB: rpm
+    ports:
+      - "5432:5432"
+    volumes:
+      - rpm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rpm -d rpm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4
+    container_name: rpm-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    container_name: rpm-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # 控制台
+    volumes:
+      - rpm-miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 一次性初始化：创建应用使用的 rpm-files 桶（幂等，已存在则跳过）
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/rpm-files &&
+      echo 'bucket rpm-files ready'
+      "
+
+volumes:
+  rpm-pgdata:
+  rpm-miniodata:

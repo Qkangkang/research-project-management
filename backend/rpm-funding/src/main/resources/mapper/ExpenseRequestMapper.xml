@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  expense_request 支出申请 SQL（T-FUND-004）。
+  提交/审批入口使用行级排他锁，显式列清单，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.funding.infrastructure.mapper.ExpenseRequestMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.funding.infrastructure.entity.ExpenseRequestEntity">
+        SELECT id,
+               request_no,
+               project_id,
+               budget_version_id,
+               budget_line_id,
+               amount,
+               purpose,
+               payee_name,
+               payee_bank_account_masked,
+               payee_bank_account_encrypted,
+               payee_bank_name,
+               status,
+               current_version_id,
+               creation_idempotency_key,
+               submitted_by,
+               submitted_at,
+               approved_at,
+               paid_at,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM expense_request
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

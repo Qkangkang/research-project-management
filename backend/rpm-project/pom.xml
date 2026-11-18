@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-project</artifactId>
+    <name>rpm-project</name>
+    <description>项目主档、成员、基线、里程碑、变更、交接、风险</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 应用服务入口授权判定与字段脱敏（技术文档 03 §2.1；禁止只靠 Controller 注解） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-iam</artifactId>
+        </dependency>
+        <!-- 里程碑延期审批只依赖 WorkflowPort，不直接操作 Flowable 表 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-workflow</artifactId>
+        </dependency>
+        <!-- 项目状态/成员/风险/立项关键动作审计（与业务同事务） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-audit</artifactId>
+        </dependency>
+        <!-- 风险证据文件可用性校验（只保存 file_id） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-file</artifactId>
+        </dependency>
+        <!-- 立项创建端口由 rpm-application 定义、本模块实现（避免 application → project 循环依赖；
+             Bean 装配在 rpm-boot，见任务拆解 Batch-11 风险项） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-application</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

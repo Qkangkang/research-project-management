@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  application_version 申报版本 SQL（Batch-9 保存草稿 / 提交固化支撑）。
+
+  设计口径：
+  - selectDraftByApplicationId：同一申报理论上最多一条 DRAFT 行，按 version_no 倒序
+    取一条兜底历史脏数据；谓词与 uk_application_version_no 前缀 (application_id) 对齐；
+  - selectMaxVersionNo：提交/保存草稿时计算 version_no = max + 1（无版本返回 0）；
+  - 显式列出全部列，禁止 SELECT *，与 ApplicationVersionEntity 的 @TableField 逐一对应；
+  - 已提交版本不可变：本文件不提供任何 UPDATE 语句。
+-->
+<mapper namespace="cn.edu.rpm.application.infrastructure.mapper.ApplicationVersionMapper">
+
+    <select id="selectDraftByApplicationId"
+            resultType="cn.edu.rpm.application.infrastructure.entity.ApplicationVersionEntity">
+        SELECT id,
+               application_id,
+               version_no,
+               form_data,
+               content_hash,
+               status,
+               submitted_by,
+               submitted_at,
+               submit_idempotency_key,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM application_version
+         WHERE application_id = #{applicationId}
+           AND status = 'DRAFT'
+         ORDER BY version_no DESC
+         LIMIT 1
+    </select>
+
+    <select id="selectMaxVersionNo" resultType="int">
+        SELECT COALESCE(MAX(version_no), 0)
+          FROM application_version
+         WHERE application_id = #{applicationId}
+    </select>
+
+</mapper>

@@ -1,0 +1,50 @@
+# =============================================================================
+# 生产环境配置：全部凭据经环境变量/密钥管理注入，代码库不落任何密钥
+# =============================================================================
+spring:
+  datasource:
+    # DB_URL 必须包含 stringtype=unspecified（BaseEntity 的 String 主键/操作人写入 uuid 列的前提，T-DB-008）
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: rpm-hikari-prod
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 30000
+      validation-timeout: 5000
+      max-lifetime: 1800000
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      timeout: ${REDIS_TIMEOUT:3000}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:3000}
+
+rpm:
+  # 工作流（Batch-6 T-WF-001）：生产禁止部署测试流程
+  workflow:
+    test-process:
+      deploy-enabled: false
+  # 财务支付回调验签密钥（FinanceSignatureVerifier；缺省 fail-closed，回调接口拒绝服务。
+  # 院方环境须与财务系统约定后经环境变量 FINANCE_CALLBACK_SECRET 注入）
+  finance:
+    callback:
+      secret: ${FINANCE_CALLBACK_SECRET:}
+  file:
+    minio:
+      # 生产端点/凭据/桶全部经环境变量注入，缺失即启动失败（MinioConfig fail-fast）
+      endpoint: ${MINIO_ENDPOINT}
+      access-key: ${MINIO_ACCESS_KEY}
+      secret-key: ${MINIO_SECRET_KEY}
+      bucket: ${MINIO_BUCKET}
+      connect-timeout: ${MINIO_CONNECT_TIMEOUT:3s}
+      read-timeout: ${MINIO_READ_TIMEOUT:30s}
+      write-timeout: ${MINIO_WRITE_TIMEOUT:30s}
+
+logging:
+  level:
+    cn.edu.rpm: INFO
+    org.flywaydb: WARN

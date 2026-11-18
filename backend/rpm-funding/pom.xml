@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-funding</artifactId>
+    <name>rpm-funding</name>
+    <description>预算版本、支出申请、资金事件、支付、对账</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 资金以项目为主档（项目状态、PI、部门与有效成员装载） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-project</artifactId>
+        </dependency>
+        <!-- 应用服务入口授权判定（技术文档 03 §2.1） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-iam</artifactId>
+        </dependency>
+        <!-- 预算/支出/特批关键动作审计（与业务同事务） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-audit</artifactId>
+        </dependency>
+        <!-- 支出/特批审批只依赖 WorkflowPort，不直接操作 Flowable 表 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-workflow</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus（运行期数据源/拦截器由 rpm-boot 装配） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

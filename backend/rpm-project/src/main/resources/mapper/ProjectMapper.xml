@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  project 项目主档 SQL（T-PRJ-001）。
+
+  设计口径：
+  - selectByIdForUpdate 为状态迁移/基线切换的悲观锁入口：事务内锁定项目行，
+    与 project.version 乐观锁共同保证并发迁移只有一笔成功；
+  - 显式列出全部列，禁止 SELECT *，与 ProjectEntity 的 @TableField 逐一对应。
+-->
+<mapper namespace="cn.edu.rpm.project.infrastructure.mapper.ProjectMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.project.infrastructure.entity.ProjectEntity">
+        SELECT id,
+               project_no,
+               title,
+               project_type,
+               dept_id,
+               pi_id,
+               status,
+               source_type,
+               source_application_version_id,
+               current_baseline_id,
+               approved_at,
+               start_date,
+               end_date,
+               financial_project_no,
+               external_approval_no,
+               external_contract_no,
+               frozen_at,
+               frozen_reason,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM project
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

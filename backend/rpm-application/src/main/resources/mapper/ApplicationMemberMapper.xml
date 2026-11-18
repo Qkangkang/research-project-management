@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  application_member 申报团队成员 SQL（T-APP-005）。
+
+  设计口径：
+  - insertBatch 为提交链路固化成员快照的多值 INSERT，避免逐行往返；
+  - 每批条数由 Repository 控制（RULE-DB3 ≤ 500），本 XML 不做分批；
+  - created_at / updated_at 由数据库默认 now() 填充（V01 / V04 DDL），
+    批量 INSERT 不经过 MyBatis-Plus 审计填充器，故不显式写入这两列；
+  - sort_order 列 NOT NULL DEFAULT 0，多值 INSERT 显式绑定 null 不会触发默认值，
+    故以 COALESCE 兜底为 0；
+  - created_by / updated_by 可空，由调用方（应用服务）预先赋值；
+  - version 新行固定为 0（乐观锁起点，与 DDL DEFAULT 0 一致）。
+-->
+<mapper namespace="cn.edu.rpm.application.infrastructure.mapper.ApplicationMemberMapper">
+
+    <insert id="insertBatch">
+        INSERT INTO application_member
+            (id,
+             application_version_id,
+             user_id,
+             member_role,
+             contribution_desc,
+             sort_order,
+             created_by,
+             updated_by,
+             version)
+        VALUES
+        <foreach collection="members" item="m" separator=",">
+            (#{m.id},
+             #{m.applicationVersionId},
+             #{m.userId},
+             #{m.memberRole},
+             #{m.contributionDesc},
+             COALESCE(#{m.sortOrder}, 0),
+             #{m.createdBy},
+             #{m.updatedBy},
+             0)
+        </foreach>
+    </insert>
+
+</mapper>

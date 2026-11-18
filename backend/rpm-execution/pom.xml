@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-execution</artifactId>
+    <name>rpm-execution</name>
+    <description>周期报告、交付物、轻任务</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 执行数据以项目为主档（项目存在性与成员权限），依赖方向遵循 01 §2.2 模块协作图 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-project</artifactId>
+        </dependency>
+        <!-- 应用服务入口授权判定 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-iam</artifactId>
+        </dependency>
+        <!-- 报告创建/提交与实际交付物文件校验（01 §2.2：EXEC 依赖 FILE） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-file</artifactId>
+        </dependency>
+        <!-- 报告创建/提交审计 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-audit</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

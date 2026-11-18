@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://rpm.edu.cn/workflow/expense">
+
+    <!--
+      经费支出审批流程。
+      当前本地初始化数据使用发起人作为审批人；生产环境应由模板发布流程替换为实际审批人规则。
+    -->
+    <process id="expenseApproval" name="经费支出审批" isExecutable="true">
+        <startEvent id="start" name="发起"/>
+        <sequenceFlow id="flow-start" sourceRef="start" targetRef="expenseReview"/>
+        <userTask id="expenseReview" name="经费审批" flowable:assignee="${initiatorId}"/>
+        <sequenceFlow id="flow-review" sourceRef="expenseReview" targetRef="end"/>
+        <endEvent id="end" name="结束"/>
+    </process>
+</definitions>

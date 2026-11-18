@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-audit</artifactId>
+    <name>rpm-audit</name>
+    <description>审计日志、访问日志、导出日志（Batch-5：只追加审计 + 非关键审计 outbox）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 任务拆解模块依赖图 rpm-audit —→ rpm-iam（审计主体：操作人/代理身份来自 AuthContext） -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-iam</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus（运行期数据源/拦截器由 rpm-boot 装配） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- @Audited 审计切面（技术文档 03 §4.2） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <!-- 审计摘要/outbox 载荷 JSON 序列化（版本由 Spring Boot BOM 管理） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- Instant 等 Java 8 时间类型的 JSON 序列化（outbox 载荷） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

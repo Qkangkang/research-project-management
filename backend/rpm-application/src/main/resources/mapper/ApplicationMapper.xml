@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  application 申报主档 SQL（T-APP-003）。
+
+  设计口径：
+  - selectByIdForUpdate 为提交链路的悲观锁入口：事务内锁定主档行，串行化同一申报的
+    并发提交，配合 application.version 乐观锁保证只有一笔提交成功（TC-APP-009）；
+  - 显式列出全部列，禁止 SELECT *，与 ApplicationEntity 的 @TableField 逐一对应；
+  - 下划线列名由全局 map-underscore-to-camel-case 映射为 PO 属性。
+-->
+<mapper namespace="cn.edu.rpm.application.infrastructure.mapper.ApplicationMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.application.infrastructure.entity.ApplicationEntity">
+        SELECT id,
+               application_no,
+               batch_id,
+               project_type,
+               applicant_id,
+               dept_id,
+               title,
+               source_type,
+               status,
+               current_version_id,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM application
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

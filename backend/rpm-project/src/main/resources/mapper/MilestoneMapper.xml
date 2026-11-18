@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  milestone 里程碑 SQL（T-PRJ-004）。
+
+  设计口径：
+  - selectByIdForUpdate 为延期申请链路的悲观锁入口：锁内校验「仅一条 PENDING」
+    与完成状态，串行化同一里程碑的并发申请（TC-EXED-005）；
+  - 显式列出全部列，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.project.infrastructure.mapper.MilestoneMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.project.infrastructure.entity.MilestoneEntity">
+        SELECT id,
+               project_id,
+               baseline_id,
+               code,
+               title,
+               plan_date,
+               current_plan_date,
+               actual_date,
+               owner_id,
+               completion_criteria,
+               status,
+               delay_wf_instance_id,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM milestone
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

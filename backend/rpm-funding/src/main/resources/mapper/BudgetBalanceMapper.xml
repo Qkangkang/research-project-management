@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  budget_balance 余额投影 SQL（T-FUND-003）。
+  资金事件投影入口使用行级排他锁，显式列清单，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.funding.infrastructure.mapper.BudgetBalanceMapper">
+
+    <select id="selectByBudgetLineIdForUpdate"
+            resultType="cn.edu.rpm.funding.infrastructure.entity.BudgetBalanceEntity">
+        SELECT id,
+               budget_line_id,
+               approved_amount,
+               reserved_amount,
+               approved_unpaid_amount,
+               paid_amount,
+               version,
+               updated_at
+          FROM budget_balance
+         WHERE budget_line_id = #{budgetLineId}
+           FOR UPDATE
+    </select>
+
+</mapper>

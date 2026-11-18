@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-workflow</artifactId>
+    <name>rpm-workflow</name>
+    <description>审批模板、实例、任务、委托、利益冲突校验、Flowable 适配</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-common</artifactId>
+        </dependency>
+        <!-- 职责分离与利益冲突（T-IAM-011 SeparationOfDutyGuard / ApprovalContext）
+             模块依赖图未单列 rpm-workflow → rpm-iam，但 T-WF-014 前置依赖 T-IAM-011 明确要求；
+             rpm-iam 不反向依赖 rpm-workflow，无循环 -->
+        <dependency>
+            <groupId>cn.edu.rpm</groupId>
+            <artifactId>rpm-iam</artifactId>
+        </dependency>
+        <!-- 数据访问：MyBatis-Plus（wf_* 业务表；运行期数据源/拦截器由 rpm-boot 装配） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- Flowable 7.x 内嵌流程引擎（独立 flowable schema；ACT_* 表由 Flyway V03/V09 管理） -->
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter-process</artifactId>
+        </dependency>
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

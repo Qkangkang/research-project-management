@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  ProjectQueryMapper 只读查询 SQL（T-PRJ-011；技术文档 04 §3.6/§3.7）。
+
+  设计口径：
+  - 数据范围统一由 scopeFilter 片段注入，全部使用 #{} 参数化占位符，禁止文本拼接；
+    成员身份以 EXISTS project_member 表达（ProjectScope 刻意不承载用户 ID）；
+  - 列表一次 SQL 批量填充部门名、PI 姓名、生效预算与已支付、最高未关闭风险，
+    禁止逐行回查（RULE-DB2）；
+  - 详情摘要口径与 V02 物化视图一致（生效基线、V02 可用余额公式、成果去重）；
+  - 本 Mapper 只读：禁止在此基础上追加 INSERT/UPDATE/DELETE。
+-->
+<mapper namespace="cn.edu.rpm.project.infrastructure.mapper.ProjectQueryMapper">
+
+    <!-- 数据范围：全院 / PI 本人 / 项目成员 / 授权部门 / 临时授权项目 -->
+    <sql id="scopeFilter">
+        <choose>
+            <when test="scopeAll">
+                AND TRUE
+            </when>
+            <otherwise>
+                AND (
+                    <trim prefixOverrides="OR ">
+                        <if test="scopePiId != null">
+                            p.pi_id = #{scopePiId}
+                        </if>
+                        <if test="scopeDeptIds != null and scopeDeptIds.size() > 0">
+                            OR p.dept_id IN
+                            <foreach collection="scopeDeptIds" item="deptId" open="(" separator="," close=")">
+                                #{deptId}
+                            </foreach>
+                        </if>
+                        <if test="scopeGrantedIds != null and scopeGrantedIds.size() > 0">
+                            OR p.id IN
+                            <foreach collection="scopeGrantedIds" item="grantedId" open="(" separator="," close=")">
+                                #{grantedId}
+                            </foreach>
+                        </if>
+                        OR EXISTS (
+                            SELECT 1
+                              FROM project_member pm
+                             WHERE pm.project_id = p.id
+                               AND pm.user_id = #{scopeUserId}
+                               AND pm.status = 'ACTIVE'
+                               AND pm.valid_from &lt;= now()
+                               AND (pm.valid_to IS NULL OR pm.valid_to &gt; now())
+                        )
+                    </trim>
+                )
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 列表筛选条件：编号/名称、类型、部门、PI、状态、年度 -->
+    <sql id="listFilter">
+        <if test="query.keyword != null">
+            AND (p.project_no ILIKE CONCAT('%', #{query.keyword}, '%') ESCAPE '\'
+                 OR p.title ILIKE CONCAT('%', #{query.keyword}, '%') ESCAPE '\')
+        </if>
+        <if test="query.projectType != null">
+            AND p.project_type = #{query.projectType}
+        </if>
+        <if test="query.deptId != null">
+            AND p.dept_id = #{query.deptId}
+        </if>
+        <if test="query.piId != null">
+            AND p.pi_id = #{query.piId}
+        </if>
+        <if test="query.status != null">
+            AND p.status = #{query.status}
+        </if>
+        <if test="query.year != null">
+            AND EXTRACT(YEAR FROM COALESCE(p.start_date, p.approved_at::date)) = #{query.year}
+        </if>
+    </sql>
+
+    <select id="search" resultType="cn.edu.rpm.project.application.dto.ProjectListItem">
+        SELECT p.id                      AS project_id,
+               p.project_no,
+               p.title,
+               p.project_type,
+               d.name                    AS dept_name,
+               u.display_name            AS pi_name,
+               p.status,
+               p.start_date,
+               p.end_date,
+               COALESCE((SELECT bv.total_amount
+                           FROM budget_version bv
+                          WHERE bv.project_id = p.id
+                            AND bv.status = 'EFFECTIVE'
+                          ORDER BY bv.version_no DESC
+                          LIMIT 1), 0)   AS budget_total,
+               COALESCE((SELECT SUM(bb.paid_amount)
+                           FROM budget_version bv
+                           JOIN budget_line bl ON bl.budget_version_id = bv.id
+                           JOIN budget_balance bb ON bb.budget_line_id = bl.id
+                          WHERE bv.project_id = p.id
+                            AND bv.status = 'EFFECTIVE'), 0) AS paid_amount,
+               (SELECT r.risk_level
+                  FROM project_risk r
+                 WHERE r.project_id = p.id
+                   AND r.status IN ('OPEN', 'PROCESSING', 'ESCALATED')
+                 ORDER BY CASE r.risk_level
+                              WHEN 'CRITICAL' THEN 4
+                              WHEN 'HIGH' THEN 3
+                              WHEN 'MEDIUM' THEN 2
+                              ELSE 1
+                          END DESC,
+                          r.created_at DESC
+                 LIMIT 1)                AS risk_level
+          FROM project p
+          LEFT JOIN org_unit d ON d.id = p.dept_id
+          LEFT JOIN iam_user u ON u.id = p.pi_id
+         WHERE TRUE
+        <include refid="scopeFilter"/>
+        <include refid="listFilter"/>
+         ORDER BY p.created_at DESC, p.id
+         LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(1)
+          FROM project p
+         WHERE TRUE
+        <include refid="scopeFilter"/>
+        <include refid="listFilter"/>
+    </select>
+
+    <select id="findDetail"
+            resultType="cn.edu.rpm.project.infrastructure.mapper.dto.ProjectDetailRow">
+        SELECT p.id                    AS project_id,
+               p.project_no,
+               p.title,
+               p.project_type,
+               p.pi_id,
+               u.display_name          AS pi_name,
+               p.dept_id,
+               d.name                  AS dept_name,
+               pb.id                   AS baseline_id,
+               pb.version_no           AS baseline_version,
+               p.status,
+               p.start_date,
+               p.end_date,
+               (SELECT COUNT(*)
+                  FROM project_member pm
+                 WHERE pm.project_id = p.id
+                   AND pm.status = 'ACTIVE'
+                   AND pm.valid_from &lt;= now()
+                   AND (pm.valid_to IS NULL OR pm.valid_to &gt; now())) AS member_count,
+               (SELECT COUNT(*)
+                  FROM milestone m
+                 WHERE m.baseline_id = pb.id
+                   AND m.status &lt;&gt; 'CANCELLED') AS milestone_total,
+               (SELECT COUNT(*)
+                  FROM milestone m
+                 WHERE m.baseline_id = pb.id
+                   AND m.status = 'COMPLETED')    AS milestone_completed,
+               (SELECT COUNT(*)
+                  FROM progress_report pr
+                 WHERE pr.project_id = p.id
+                   AND pr.due_date &lt;= CURRENT_DATE
+                   AND pr.status IN ('DRAFT', 'RETURNED')) AS report_due,
+               COALESCE((SELECT bv.total_amount
+                           FROM budget_version bv
+                          WHERE bv.project_id = p.id
+                            AND bv.status = 'EFFECTIVE'
+                          ORDER BY bv.version_no DESC
+                          LIMIT 1), 0)     AS budget_total,
+               COALESCE((SELECT SUM(bb.approved_amount - bb.reserved_amount
+                                    - bb.approved_unpaid_amount - bb.paid_amount)
+                           FROM budget_version bv
+                           JOIN budget_line bl ON bl.budget_version_id = bv.id
+                           JOIN budget_balance bb ON bb.budget_line_id = bl.id
+                          WHERE bv.project_id = p.id
+                            AND bv.status = 'EFFECTIVE'), 0) AS available_amount,
+               (SELECT COUNT(DISTINCT ro.id)
+                  FROM output_project_relation opr
+                  JOIN research_output ro ON ro.id = opr.output_id
+                 WHERE opr.project_id = p.id
+                   AND opr.status = 'ACTIVE'
+                   AND ro.status &lt;&gt; 'REVOKED')     AS output_count,
+               (SELECT COUNT(*)
+                  FROM project_risk r
+                 WHERE r.project_id = p.id
+                   AND r.status IN ('OPEN', 'PROCESSING', 'ESCALATED')) AS open_risk_count,
+               p.created_at,
+               p.updated_at
+          FROM project p
+          LEFT JOIN org_unit d ON d.id = p.dept_id
+          LEFT JOIN iam_user u ON u.id = p.pi_id
+          LEFT JOIN project_baseline pb
+                 ON pb.project_id = p.id
+                AND pb.status = 'EFFECTIVE'
+         WHERE p.id = #{projectId}
+        <include refid="scopeFilter"/>
+    </select>
+
+</mapper>

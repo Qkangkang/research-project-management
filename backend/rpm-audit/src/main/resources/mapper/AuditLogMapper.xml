@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  audit_log 补写专用 SQL（T-AUD-002 后续批次）。
+  insertIgnoreWithId：Outbox 补写以 event_id 作为审计主键，ON CONFLICT DO NOTHING
+  保证「领取成功但标记 SENT 前崩溃」的重放场景不产生重复审计行（幂等补写）。
+-->
+<mapper namespace="cn.edu.rpm.audit.infrastructure.mapper.AuditLogMapper">
+
+    <insert id="insertIgnoreWithId">
+        INSERT INTO audit_log (id, trace_id, actor_id, on_behalf_of, action, object_type,
+                               object_id, object_version, before_digest, after_digest,
+                               reason, ip, user_agent, occurred_at, created_at)
+        VALUES (#{entry.id}, #{entry.traceId}, #{entry.actorId}, #{entry.onBehalfOf},
+                #{entry.action}, #{entry.objectType}, #{entry.objectId}, #{entry.objectVersion},
+                #{entry.beforeDigest}, #{entry.afterDigest}, #{entry.reason}, #{entry.ip},
+                #{entry.userAgent}, #{entry.occurredAt}, now())
+        ON CONFLICT (id) DO NOTHING
+    </insert>
+</mapper>

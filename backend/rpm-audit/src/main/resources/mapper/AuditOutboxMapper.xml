@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  audit_outbox 补写任务 SQL（T-AUD-002 后续批次：非关键审计异步补写）。
+  领取口径：status + next_retry_at（V08 idx_audit_outbox_claim 部分索引）；
+  行级锁 FOR UPDATE SKIP LOCKED，多实例下互不阻塞、不重复领取。
+-->
+<mapper namespace="cn.edu.rpm.audit.infrastructure.mapper.AuditOutboxMapper">
+
+    <select id="selectPendingIds" resultType="java.lang.String">
+        SELECT id
+        FROM audit_outbox
+        WHERE status IN ('NEW', 'FAILED')
+          AND next_retry_at &lt;= now()
+        ORDER BY created_at
+        LIMIT #{maxRows}
+    </select>
+
+    <select id="lockById" resultType="cn.edu.rpm.audit.infrastructure.entity.AuditOutboxEntity">
+        SELECT id,
+               event_id,
+               payload,
+               trace_id,
+               status,
+               attempts,
+               next_retry_at,
+               last_error,
+               created_at,
+               updated_at,
+               version
+        FROM audit_outbox
+        WHERE id = #{id}
+        FOR UPDATE SKIP LOCKED
+    </select>
+
+    <update id="markSent">
+        UPDATE audit_outbox
+        SET status      = 'SENT',
+            updated_at  = now(),
+            version     = version + 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="markFailure">
+        UPDATE audit_outbox
+        SET status       = CASE WHEN attempts + 1 &gt;= #{maxAttempts} THEN 'DEAD' ELSE 'FAILED' END,
+            attempts     = attempts + 1,
+            next_retry_at = now() + (interval '1 minute' * CASE least(attempts, 3)
+                                     WHEN 0 THEN 1 WHEN 1 THEN 5 WHEN 2 THEN 15 ELSE 60 END),
+            last_error   = #{lastError},
+            updated_at   = now(),
+            version      = version + 1
+        WHERE id = #{id}
+    </update>
+</mapper>

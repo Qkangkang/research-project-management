@@ -1,0 +1,63 @@
+# =============================================================================
+# 开发环境配置：默认指向本地 PostgreSQL 16 / Redis 7，可通过环境变量覆盖
+# =============================================================================
+spring:
+  datasource:
+    # stringtype=unspecified：String 参数按目标列类型推断，BaseEntity 的 String 主键/操作人可写入 uuid 列（T-DB-008）
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/rpm?stringtype=unspecified}
+    username: ${DB_USERNAME:rpm}
+    password: ${DB_PASSWORD:rpm}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: rpm-hikari-dev
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      # 获取连接超时：禁止无超时的数据库操作（RULE-DB4）
+      connection-timeout: 30000
+      validation-timeout: 5000
+      max-lifetime: 1800000
+      # 修复 Flowable 污染 search_path 问题（Flowable 会在连接上 SET search_path TO flowable）
+      connection-init-sql: SET search_path TO public, flowable
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # 命令与连接超时（C-CHECK：所有外部调用必须有超时）
+      timeout: ${REDIS_TIMEOUT:3000}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:3000}
+
+rpm:
+  # 工作流（Batch-6 T-WF-001）：开发环境自动部署两节点测试流程，供联调与 Batch-7 集成测试
+  workflow:
+    test-process:
+      deploy-enabled: ${RPM_WF_TEST_PROCESS_DEPLOY:true}
+  # 本地联调使用 dev 自动部署的测试流程；生产仍使用 application.yml 的 applicationApproval
+  application:
+    workflow:
+      process-definition-key: ${APP_WORKFLOW_PROCESS_KEY:rpmTestApproval}
+  file:
+    minio:
+      # 本地默认值与仓库根 docker-compose.yml 的 MinIO 对齐（与 PG 的 rpm/rpm 同一口径：
+      # dev 允许开箱默认，生产全部经环境变量注入且缺失即 fail-fast）
+      endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+      access-key: ${MINIO_ACCESS_KEY:minioadmin}
+      secret-key: ${MINIO_SECRET_KEY:minioadmin}
+      bucket: ${MINIO_BUCKET:rpm-files}
+      # 外部调用超时（RULE-H1/C-CHECK）
+      connect-timeout: ${MINIO_CONNECT_TIMEOUT:3s}
+      read-timeout: ${MINIO_READ_TIMEOUT:30s}
+      write-timeout: ${MINIO_WRITE_TIMEOUT:30s}
+
+logging:
+  level:
+    cn.edu.rpm: DEBUG
+    org.flywaydb: INFO
+
+management:
+  health:
+    # 本地 Windows 版 Redis 5 的 INFO 输出反斜杠路径（如 c:\users\...），
+    # Spring Data Redis 会误判为 \uxxxx 转义并导致健康检查 503。
+    # 仅开发环境关闭 Redis 健康指示器；生产 Linux 环境保持启用。
+    redis:
+      enabled: false

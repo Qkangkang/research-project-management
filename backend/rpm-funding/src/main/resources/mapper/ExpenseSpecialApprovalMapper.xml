@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.rpm.funding.infrastructure.mapper.ExpenseSpecialApprovalMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.funding.infrastructure.entity.ExpenseSpecialApprovalEntity">
+        SELECT id,
+               expense_request_id,
+               expense_version_id,
+               special_type,
+               budget_version_id,
+               budget_line_id,
+               over_amount,
+               reason,
+               applicant_id,
+               applicant_name,
+               evidence_file_ids,
+               status,
+               wf_instance_id,
+               approver_id,
+               approved_at,
+               rejection_reason,
+               valid_until,
+               adjustment_version_id,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+        FROM expense_special_approval
+        WHERE id = #{id}::uuid
+        FOR UPDATE
+    </select>
+
+</mapper>

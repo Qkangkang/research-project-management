@@ -1,0 +1,34 @@
+# ===== 构建产物 =====
+backend/**/target/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+*.class
+*.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
+
+# ===== 依赖 =====
+node_modules/
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.iml
+
+# ===== 运行时产物 =====
+logs/
+*.log
+*.pid
+hs_err_pid*
+replay_pid*
+.tmp*/
+.verify-tmp*/
+
+# ===== 环境与密钥（本地环境变量不进库）=====
+.env
+.env.local
+frontend/.env.local
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+$null

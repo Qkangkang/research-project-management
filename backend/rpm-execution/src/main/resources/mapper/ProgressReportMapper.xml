@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  progress_report 周期报告 SQL（T-EXEC-001）。
+  提交/审核链路的悲观锁入口，显式列清单，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.execution.infrastructure.mapper.ProgressReportMapper">
+
+    <select id="selectByIdForUpdate"
+            resultType="cn.edu.rpm.execution.infrastructure.entity.ProgressReportEntity">
+        SELECT id,
+               project_id,
+               period_type,
+               period_key,
+               due_date,
+               status,
+               current_version_id,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               version
+          FROM progress_report
+         WHERE id = #{id}
+           FOR UPDATE
+    </select>
+
+</mapper>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.edu.rpm</groupId>
+        <artifactId>rpm-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>rpm-common</artifactId>
+    <name>rpm-common</name>
+    <description>统一响应、错误码、业务异常、全局异常处理器</description>
+
+    <dependencies>
+        <!-- 全局异常处理器与统一响应依赖 Web 栈（@RestControllerAdvice / ResponseEntity / Jackson）；
+             本项目为形态 A 单体，业务模块由 rpm-boot 装配运行，随 common 传递引入不改变运行形态 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- BaseEntity（T-DB-008）标注 @TableId/@TableField/@Version 所需的 MyBatis-Plus 注解；
+             仅注解元数据，不向 common 引入 MyBatis/ORM 运行时（运行时由 rpm-boot 装配） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-annotation</artifactId>
+        </dependency>
+        <!-- 单测模拟审计字段填充契约所需（TableInfoHelper / MetaObjectHandler / strictFill） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://rpm.edu.cn/workflow/test">
+
+    <!--
+      测试审批流程（T-WF-001 / Batch-7 WorkflowIntegrationTest 使用）：
+      形式审查 → 决策，两节点均使用流程变量 assignee 指定处理人。
+      生产环境通过 rpm.workflow.test-process.deploy-enabled=false 关闭部署。
+    -->
+    <process id="rpmTestApproval" name="测试审批流程" isExecutable="true">
+        <startEvent id="start" name="发起"/>
+        <sequenceFlow id="flow-start" sourceRef="start" targetRef="formalReview"/>
+        <userTask id="formalReview" name="形式审查" flowable:assignee="${assignee}"/>
+        <sequenceFlow id="flow-review" sourceRef="formalReview" targetRef="decision"/>
+        <userTask id="decision" name="决策" flowable:assignee="${assignee}"/>
+        <sequenceFlow id="flow-decision" sourceRef="decision" targetRef="end"/>
+        <endEvent id="end" name="结束"/>
+    </process>
+</definitions>

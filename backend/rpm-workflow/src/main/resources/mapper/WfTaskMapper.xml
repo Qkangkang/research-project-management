@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  wf_task 待办分页 SQL（T-WF-009）。
+
+  设计口径：
+  - 联表 wf_instance 带出 biz_type / biz_id，避免逐条回查实例（RULE-DB2 禁止 N+1）；
+  - 过滤列与 idx_wf_task_assignee_status (assignee_id, status, due_at) 对齐；
+  - due_at 为空的限时任务排在最后，同刻按 created_at 保证稳定分页；
+  - 分页由 OFFSET/LIMIT 完成（页面大小上限由 TaskQuery 约束 1～100）。
+-->
+<mapper namespace="cn.edu.rpm.workflow.infrastructure.mapper.WfTaskMapper">
+
+    <select id="selectTaskPage" resultType="cn.edu.rpm.workflow.infrastructure.repository.WorkflowTaskRow">
+        SELECT t.id            AS task_id,
+               t.instance_id   AS instance_id,
+               i.biz_type      AS biz_type,
+               i.biz_id        AS biz_id,
+               t.node_key      AS node_key,
+               t.node_name     AS node_name,
+               t.assignee_id   AS assignee_id,
+               t.delegated_from AS delegated_from,
+               t.status        AS status,
+               t.due_at        AS due_at,
+               t.round_no      AS round_no,
+               t.version       AS version
+          FROM wf_task t
+          JOIN wf_instance i ON i.id = t.instance_id
+         WHERE t.assignee_id = #{assigneeId}
+           AND t.status = #{status}
+        <if test="bizType != null and bizType != ''">
+           AND i.biz_type = #{bizType}
+        </if>
+         ORDER BY t.due_at ASC NULLS LAST, t.created_at ASC
+         LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countTaskPage" resultType="long">
+        SELECT count(*)
+          FROM wf_task t
+          JOIN wf_instance i ON i.id = t.instance_id
+         WHERE t.assignee_id = #{assigneeId}
+           AND t.status = #{status}
+        <if test="bizType != null and bizType != ''">
+           AND i.biz_type = #{bizType}
+        </if>
+    </select>
+
+</mapper>

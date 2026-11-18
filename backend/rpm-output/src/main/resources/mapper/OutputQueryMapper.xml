@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  成果检索与统计 SQL（Batch-20 T-OUT-014；技术文档 09 §5、07 §5.1）。
+
+  设计口径：
+  - 全院成果库仅 status = 'APPROVED'（未公开成果隔离，TC-OSR-002）；
+  - 关键字使用 ILIKE，走 V01 idx_output_title_trgm(idx gin_trgm_ops) 的等价表达式；
+    doi / patent_no 有 B-Tree 索引，前缀/包含检索由数据库优化器选择；
+  - 「我的成果 + 已公开成果」固定 owner_id = 当前用户 OR status = 'APPROVED'，
+    保证他人 DRAFT/SUBMITTED/RETURNED/REVOKED 不出现在结果（TC-OUT-014）；
+  - 统计使用 COUNT(DISTINCT id) 成果去重数，不输出项目关联数口径（TC-OSR-005）；
+  - 显式列出列清单，禁止 SELECT *。
+-->
+<mapper namespace="cn.edu.rpm.output.infrastructure.mapper.OutputQueryMapper">
+
+    <sql id="libraryWhere">
+        WHERE status = 'APPROVED'
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (title ILIKE '%' || #{q.keyword} || '%'
+                 OR doi ILIKE '%' || #{q.keyword} || '%'
+                 OR patent_no ILIKE '%' || #{q.keyword} || '%')
+        </if>
+        <if test="q.outputType != null and q.outputType != ''">
+            AND output_type = #{q.outputType}
+        </if>
+        <if test="q.deptId != null and q.deptId != ''">
+            AND dept_id = #{q.deptId}
+        </if>
+        <if test="q.year != null">
+            AND EXTRACT(YEAR FROM completed_at) = #{q.year}
+        </if>
+    </sql>
+
+    <select id="selectLibraryPage" resultType="cn.edu.rpm.output.infrastructure.mapper.dto.OutputLibraryRow">
+        SELECT id,
+               output_type,
+               title,
+               doi,
+               patent_no,
+               owner_id,
+               dept_id,
+               completed_at
+          FROM research_output
+        <include refid="libraryWhere"/>
+         ORDER BY updated_at DESC, id
+         LIMIT #{q.size} OFFSET #{q.offset}
+    </select>
+
+    <select id="countLibrary" resultType="long">
+        SELECT COUNT(1)
+          FROM research_output
+        <include refid="libraryWhere"/>
+    </select>
+
+    <sql id="visibleWhere">
+        WHERE (owner_id = #{q.ownerId} OR status = 'APPROVED')
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (title ILIKE '%' || #{q.keyword} || '%'
+                 OR doi ILIKE '%' || #{q.keyword} || '%'
+                 OR patent_no ILIKE '%' || #{q.keyword} || '%')
+        </if>
+        <if test="q.outputType != null and q.outputType != ''">
+            AND output_type = #{q.outputType}
+        </if>
+        <if test="q.status != null and q.status != ''">
+            AND status = #{q.status}
+        </if>
+        <if test="q.deptId != null and q.deptId != ''">
+            AND dept_id = #{q.deptId}
+        </if>
+        <if test="q.year != null">
+            AND EXTRACT(YEAR FROM completed_at) = #{q.year}
+        </if>
+    </sql>
+
+    <select id="selectVisiblePage" resultType="cn.edu.rpm.output.infrastructure.mapper.dto.OutputSearchRow">
+        SELECT id,
+               output_type,
+               title,
+               doi,
+               patent_no,
+               status,
+               owner_id,
+               dept_id,
+               completed_at
+          FROM research_output
+        <include refid="visibleWhere"/>
+         ORDER BY updated_at DESC, id
+         LIMIT #{q.size} OFFSET #{q.offset}
+    </select>
+
+    <select id="countVisible" resultType="long">
+        SELECT COUNT(1)
+          FROM research_output
+        <include refid="visibleWhere"/>
+    </select>
+
+    <select id="statsByType" resultType="cn.edu.rpm.output.infrastructure.mapper.dto.OutputStatRow">
+        SELECT output_type AS group_key,
+               COUNT(DISTINCT id) AS output_count
+          FROM research_output
+         WHERE status = 'APPROVED'
+        <if test="deptId != null and deptId != ''">
+            AND dept_id = #{deptId}
+        </if>
+        <if test="year != null">
+            AND EXTRACT(YEAR FROM completed_at) = #{year}
+        </if>
+         GROUP BY output_type
+         ORDER BY output_count DESC, output_type
+    </select>
+
+    <select id="statsByYear" resultType="cn.edu.rpm.output.infrastructure.mapper.dto.OutputStatRow">
+        SELECT CAST(EXTRACT(YEAR FROM completed_at) AS varchar) AS group_key,
+               COUNT(DISTINCT id) AS output_count
+          FROM research_output
+         WHERE status = 'APPROVED'
+           AND completed_at IS NOT NULL
+        <if test="deptId != null and deptId != ''">
+            AND dept_id = #{deptId}
+        </if>
+         GROUP BY EXTRACT(YEAR FROM completed_at)
+         ORDER BY group_key
+    </select>
+
+    <select id="statsByDept" resultType="cn.edu.rpm.output.infrastructure.mapper.dto.OutputStatRow">
+        SELECT dept_id AS group_key,
+               COUNT(DISTINCT id) AS output_count
+          FROM research_output
+         WHERE status = 'APPROVED'
+        <if test="year != null">
+            AND EXTRACT(YEAR FROM completed_at) = #{year}
+        </if>
+         GROUP BY dept_id
+         ORDER BY output_count DESC, dept_id
+    </select>
+
+</mapper>
